@@ -47,7 +47,7 @@ void parse_constraints(Constraints constraints) {
         if (c->tp != STRUCTURE) { // only structure constraints need to be parsed :D
             continue;
         }
- 
+    
         getStructureConfig(c->type, MC_1_21_3, &conf);
         c->salt = conf.salt;
         c->chunk_range = conf.chunkRange;
@@ -75,6 +75,8 @@ void parse_constraints(Constraints constraints) {
 uint64_t gcd(uint64_t a, uint64_t b) {
     if (a == 0)
         return b;
+    if (b == 0)
+        return a;
     if (b == 0)
         return a;
     if (a == b)
@@ -306,15 +308,41 @@ int main(void) {
         STRUCTURE_CONSTRAINT(Desert_Pyramid, 5144, -16152),
         STRUCTURE_CONSTRAINT(Desert_Pyramid, 22840, -24520),
     };
-
     Constraints cons = (Constraints){.cons=constraints, .length=LENGTH(constraints)};
     parse_constraints(cons);
 
+    // filewriter part
+    // open files
+    FILE *structure_file = fopen("structure_seeds.txt", "w");
+    if (structure_file == NULL) {
+        fprintf(stderr, "Error opening structure_seeds.txt!\n");
+        return 1; // indicating an error
+    }
+
+    FILE *world_file = fopen("world_seeds.txt", "w");
+    if (world_file == NULL) {
+        fprintf(stderr, "Error opening world_seeds.txt!\n");
+        fclose(structure_file); 
+        return 1; // same as structure
+    }
+
     Seeds structure_seeds = solve_constraints_for_structure_seeds(cons);
-    printf("Found %ld structure seeds!\n", structure_seeds.size);
+    printf("Found %llu structure seeds!\n", (unsigned long long)structure_seeds.size);
+    // structure seeds to file
+    for (size_t i = 0; i < structure_seeds.size; i++) {
+        fprintf(structure_file, "%" PRIu64 "\n", structure_seeds.seeds[i]);
+    }
 
     Seeds world_seeds = solve_constraints_for_world_seeds(cons, structure_seeds);
-    printf("Found %ld world seeds!\n", world_seeds.size);
+    printf("Found %llu world seeds!\n", (unsigned long long)world_seeds.size);
+    // world seeds to file
+    for (size_t i = 0; i < world_seeds.size; i++) {
+        fprintf(world_file, "%" PRIu64 "\n", world_seeds.seeds[i]);
+    }
+
+    // close files
+    fclose(structure_file);
+    fclose(world_file);
 
     free(structure_seeds.seeds);
     free(world_seeds.seeds);
